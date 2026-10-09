@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     OPENAI_COMPAT_BASE_URL: str = ""
     OPENAI_COMPAT_API_KEY: str = ""
     OPENAI_COMPAT_MODEL: str = ""
-    DATABASE_URL: str
+    DATABASE_URL: str = "postgresql+asyncpg://lenny:lenny@localhost:5432/lenny_db"
     RETRIEVAL_TOP_K: int = 6
     RETRIEVAL_MIN_SCORE: float = 0.30
     LLM_TIMEOUT_SECONDS: int = 120

@@ -158,9 +158,9 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 - [ ] Traceability: every chunk links to episode title + source path/URL
 
 ### 4.6 Model toggle design
-- [ ] `.env`: `LLM_PROVIDER=ollama|anthropic|openai`, `OLLAMA_MODEL`, `ANTHROPIC_API_KEY` (optional), timeouts
-- [ ] Provider interface (one class per provider, same method signature)
-- [ ] Fallback rule documented (e.g. Ollama down → clear error + suggestion to switch; optional auto-fallback to cloud only if key exists)
+- [x] `.env`: `LLM_PROVIDER=ollama|openai_compatible`, `OLLAMA_MODEL`, `OPENAI_COMPAT_API_KEY` (optional), timeouts
+- [x] Provider interface (one class per provider, same method signature: chat, embed, is_available)
+- [x] Fallback rule documented (e.g. Ollama down → clear error + suggestion to switch; manual toggle only)
 - [ ] Active provider shown in UI header/badge
 
 ### 4.7 Security design (artifacts)
