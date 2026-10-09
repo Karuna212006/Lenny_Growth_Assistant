@@ -1,5 +1,7 @@
 # Lenny Growth Assistant — End-to-End Plan & Checklist
 
+Built from the assignment brief. Tick [x] as you finish each item. Anything you do that is not in this plan goes into the Outside-the-Plan Log at the bottom, so you can always check you stayed inside the brief.
+
 ## 0. Reality Check: Timeline
 
 Due: **12/10/26 EOD** (read as 12 Oct 2026). Today is 9 Oct, so you have about 3 working days plus the due day. Submit by **Monday afternoon**, not at the last minute.
