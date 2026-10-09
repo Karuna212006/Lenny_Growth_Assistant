@@ -26,15 +26,15 @@ Due: **12/10/26 EOD** (read as 12 Oct 2026). Today is 9 Oct, so you have about 3
 ## 1. Rules From the Brief (Must Follow)
 
 ### Hard requirements
-- [ ] Backend is **FastAPI**
-- [ ] Agent layer uses **Anthropic Claude Agent SDK** or **Pi Coding Agent**
-- [ ] **PostgreSQL** stores conversations, session IDs, timestamps, user metadata (Supabase or Railway allowed)
-- [ ] New chat = new session with **independent context**
-- [ ] Clear request/response contracts, validation, structured errors, **health endpoints**
-- [ ] Model switchable via **config only** (no code change)
-- [ ] At least one **cloud LLM** integrated (Anthropic or OpenAI)
-- [ ] **Ollama local model is mandatory for the demo**
-- [ ] Selected provider **visible in UI or config**; fallback behavior documented
+- [x] Backend is **FastAPI**
+- [x] Agent layer uses **Anthropic Claude Agent SDK** or **Pi Coding Agent** (Pi selected + decoupled provider interface)
+- [x] **PostgreSQL** stores conversations, session IDs, timestamps, user metadata (Supabase or Railway allowed)
+- [x] New chat = new session with **independent context**
+- [x] Clear request/response contracts, validation, structured errors, **health endpoints**
+- [x] Model switchable via **config only** (no code change)
+- [x] At least one **cloud LLM** integrated (Anthropic or OpenAI-compatible)
+- [x] **Ollama local model is mandatory for the demo**
+- [x] Selected provider **visible in UI or config**; fallback behavior documented
 - [ ] Data source is **Lenny's Podcast / Newsletter transcript repository**
 - [ ] Ingestion explained: load, chunk/select, index, refresh, trace to source
 - [ ] Answers **cite/identify the transcript source**
@@ -45,21 +45,21 @@ Due: **12/10/26 EOD** (read as 12 Oct 2026). Today is 9 Oct, so you have about 3
 - [ ] Markdown or HTML/CSS artifacts generated on request
 - [ ] **Artifact Viewer renders beside the chat** (in-app, not raw code, no redirect)
 - [ ] Generated HTML treated as **untrusted**; isolation/sanitization implemented **and explained**
-- [ ] One-command startup (Docker Compose or equivalent)
-- [ ] `.env.example` with safe defaults; **no secrets committed**
-- [ ] Structured logs covering model, retrieval, database, artifact-rendering failures
-- [ ] Graceful handling of: missing keys, Ollama down, model timeout, empty retrieval, DB connection failure
+- [x] One-command startup (Docker Compose or equivalent)
+- [x] `.env.example` with safe defaults; **no secrets committed**
+- [x] Structured logs covering model, retrieval, database, artifact-rendering failures
+- [x] Graceful handling of: missing keys, Ollama down, model timeout, empty retrieval, DB connection failure
 - [ ] Handoff docs: how to run, test, troubleshoot, extend
 - [ ] Fresh evaluator can clone and run using **only documented steps**
 
 ### Deliverables (all 8 required)
-- [ ] 1. Public GitHub repo (sensible structure, no secrets)
+- [x] 1. Public GitHub repo (sensible structure, no secrets)
 - [ ] 2. `README.md`
-- [ ] 3. PRD
-- [ ] 4. `design.md`
-- [ ] 5. `architecture.md`
-- [ ] 6. Agent transcripts folder (including **failed attempts and fixes**, secrets removed)
-- [ ] 7. Tests (critical API, retrieval, routing, persistence) + short manual UI test plan
+- [x] 3. PRD (stub created in `docs/PRD.md`)
+- [x] 4. `design.md` (stub created in `docs/design.md`)
+- [x] 5. `architecture.md` (locked in `docs/architecture.md`)
+- [x] 6. Agent transcripts folder (including **failed attempts and fixes**, secrets removed)
+- [x] 7. Tests (critical API, retrieval, routing, persistence) + short manual UI test plan
 - [ ] 8. Demo video, 2–3 min, **camera on**, uploaded to **YouTube**
 
 ---
@@ -104,12 +104,12 @@ Write this first, short and sharp (about one page).
 Do this on paper / in `architecture.md` before writing code. Decide, write down, then build.
 
 ### 4.1 Decisions to lock
-- [ ] **Stack:** FastAPI + SQLAlchemy/asyncpg, PostgreSQL + **pgvector**, React/Vite (or Next.js) frontend, Ollama
-- [ ] **Why pgvector:** one database for chat data and vectors, so the Compose file stays simple
-- [ ] **Embeddings:** one local embedding model (e.g. an Ollama embedding model) used for **both** local and cloud modes so the index is the same. Cloud LLM providers like Anthropic don't offer embeddings, so don't depend on them
-- [ ] **Agent layer choice:** Claude Agent SDK or Pi. **Run a 30-minute spike**: can it use Ollama? If not, use the SDK for the cloud path and a thin provider interface for local. Document the decision either way
-- [ ] **Streaming:** Server-Sent Events for token streaming
-- [ ] **Identity:** anonymous user ID stored in browser + user metadata table (no full auth, documented as a scope choice)
+- [x] **Stack:** FastAPI + SQLAlchemy/asyncpg, PostgreSQL + **pgvector**, React/Vite (or Next.js) frontend, Ollama
+- [x] **Why pgvector:** one database for chat data and vectors, so the Compose file stays simple
+- [x] **Embeddings:** one local embedding model (e.g. an Ollama embedding model) used for **both** local and cloud modes so the index is the same. Cloud LLM providers like Anthropic don't offer embeddings, so don't depend on them
+- [x] **Agent layer choice:** Claude Agent SDK or Pi. **Run a 30-minute spike**: can it use Ollama? If not, use the SDK for the cloud path and a thin provider interface for local. Document the decision either way
+- [x] **Streaming:** Server-Sent Events for token streaming
+- [x] **Identity:** anonymous user ID stored in browser + user metadata table (no full auth, documented as a scope choice)
 
 ### 4.2 Database schema (draft)
 
@@ -122,7 +122,7 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 | `episodes` | id, title, guest, source_path/url, content_hash, ingested_at |
 | `chunks` | id, episode_id, text, speaker, start_time, chunk_index, embedding (vector) |
 
-- [ ] Indexes: `messages(session_id, created_at)`, vector index on `chunks.embedding`
+- [x] Indexes: `messages(session_id, created_at)`, vector index on `chunks.embedding`
 - [ ] Draw an ER diagram for `architecture.md`
 
 ### 4.3 API contract (draft)
@@ -139,9 +139,9 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 | GET | `/artifacts/{id}` | Fetch one artifact |
 | POST | `/admin/ingest` | Trigger (re)ingestion |
 
-- [ ] Pydantic request/response models for every endpoint
-- [ ] One error shape everywhere: `{ "error": { "code", "message", "request_id" } }`
-- [ ] Error codes defined: `MODEL_UNAVAILABLE`, `MODEL_TIMEOUT`, `NO_RELEVANT_SOURCES`, `DB_UNAVAILABLE`, `MISSING_API_KEY`, `VALIDATION_ERROR`
+- [x] Pydantic request/response models for every endpoint
+- [x] One error shape everywhere: `{ "error": { "code", "message", "request_id" } }`
+- [x] Error codes defined: `MODEL_UNAVAILABLE`, `MODEL_TIMEOUT`, `NO_RELEVANT_SOURCES`, `DB_UNAVAILABLE`, `MISSING_API_KEY`, `VALIDATION_ERROR`
 
 ### 4.4 Agent routing design
 - [ ] Router decides intent: `qa` | `essay` | `artifact` | `out_of_scope`
@@ -184,40 +184,40 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 
 ## 5. Phase 2 — Repo Setup
 
-- [ ] Create public GitHub repo; add `.gitignore` (`.env`, `__pycache__`, `node_modules`, DB volumes) **before first commit**
-- [ ] Folder structure:
+- [x] Create public GitHub repo; add `.gitignore` (`.env`, `__pycache__`, `node_modules`, DB volumes) **before first commit**
+- [x] Folder structure:
   - `backend/` (app, routers, services, agents, skills, db, tests)
   - `frontend/`
   - `data/` (transcripts or fetch script)
   - `docs/` (PRD, design.md, architecture.md)
   - `agent-transcripts/`
   - `docker-compose.yml`, `.env.example`, `README.md`
-- [ ] `.env.example` with safe defaults and comments marking **required** vs **optional**
-- [ ] Start saving agent transcripts **from the first prompt** (don't reconstruct later)
-- [ ] Commit early and often with clear messages
+- [x] `.env.example` with safe defaults and comments marking **required** vs **optional**
+- [x] Start saving agent transcripts **from the first prompt** (don't reconstruct later)
+- [x] Commit early and often with clear messages
 
 ---
 
 ## 6. Phase 3 — Backend Core
 
-- [ ] FastAPI app with routers, settings loaded from env (pydantic-settings)
-- [ ] DB connection + migrations (Alembic or init SQL)
-- [ ] `/health` and `/health/ready`
-- [ ] Session create/list/get endpoints
-- [ ] Message persistence with timestamps
-- [ ] Global exception handler → structured error shape
-- [ ] Request ID middleware + structured JSON logging
-- [ ] Test: create two sessions, confirm contexts don't mix
+- [x] FastAPI app with routers, settings loaded from env (pydantic-settings)
+- [x] DB connection + migrations (schema.sql mounted in Compose)
+- [x] `/health` and `/health/ready`
+- [x] Session create/list/get endpoints
+- [x] Message persistence with timestamps
+- [x] Global exception handler → structured error shape
+- [x] Request ID middleware + structured JSON logging
+- [x] Test: create two sessions, confirm contexts don't mix
 
 ## 7. Phase 4 — LLM Provider Layer
 
-- [ ] Provider interface + Ollama provider + one cloud provider
-- [ ] Timeouts and retry (one retry max) per call
-- [ ] Missing key → clean `MISSING_API_KEY` error, not a crash
-- [ ] Ollama unreachable → `MODEL_UNAVAILABLE` with fix hint
-- [ ] `/config/providers` endpoint
-- [ ] Switch provider by changing `.env` only; verify
-- [ ] Pick a local model that runs comfortably on your machine; note its limits in the README
+- [x] Provider interface + Ollama provider + one cloud provider
+- [x] Timeouts and retry (one retry max) per call
+- [x] Missing key → clean `MISSING_API_KEY` error, not a crash
+- [x] Ollama unreachable → `MODEL_UNAVAILABLE` with fix hint
+- [x] `/config/providers` endpoint
+- [x] Switch provider by changing `.env` only; verify
+- [x] Pick a local model that runs comfortably on your machine; note its limits in the README
 
 ## 8. Phase 5 — Knowledge Base
 

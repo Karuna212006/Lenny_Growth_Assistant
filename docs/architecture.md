@@ -197,7 +197,8 @@ The backend finds or creates the `users` row from it.
 
 ## 9. Open Items
 
-- [ ] Run the agent SDK / Pi spike and record the result (Section 0)
-- [ ] Confirm transcript repo source and license
+- [x] Run the agent SDK / Pi spike and record the result (Section 0) — Pi selected with decoupled provider interface
+- [ ] Confirm transcript repo source and license (Phase 5 Ingestion)
 - [ ] Time `qwen2.5:7b-instruct` on the laptop; fall back to `qwen2.5:3b` if too slow
-- [ ] Full schema types and constraints (Plan 4.2)
+- [x] Full schema types and constraints (Plan 4.2) — locked in `docs/schema.sql` and `backend/app/db/models.py`
+
