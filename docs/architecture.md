@@ -65,25 +65,54 @@ Why this shape: one database keeps Compose simple; a thin provider interface iso
 
 ---
 
-## 3. API Contract (draft)
+## 3. API Contract — LOCKED 4.3
 
-| Method | Path | Purpose |
+All schemas are in `backend/app/core/schemas.py`.
+Every `/sessions` and `/artifacts` request carries `X-Anon-Key: <browser-uuid>`.
+The backend finds or creates the `users` row from it.
+
+| Method | Path | Request body | Response |
+|---|---|---|---|
+| GET | `/health` | — | `{"status": "ok"}` |
+| GET | `/health/ready` | — | `ReadyOut` |
+| POST | `/sessions` | `SessionCreate` | `SessionOut` |
+| GET | `/sessions` | — | `list[SessionOut]` |
+| GET | `/sessions/{id}` | — | `SessionDetail` |
+| POST | `/sessions/{id}/messages` | `MessageCreate` | SSE stream (see below) |
+| GET | `/config/providers` | — | `ProvidersOut` |
+| GET | `/artifacts/{id}` | — | `ArtifactOut` |
+| POST | `/admin/ingest` | — | `IngestResult` |
+
+- One error shape everywhere: `{ "error": { "code", "message", "request_id" } }`
+- Global exception handler maps every error to this shape; raw stack traces never returned.
+- Request-ID middleware binds `request_id` to logs and error payloads.
+
+### Error code → HTTP status
+
+| Code | HTTP |
+|---|---|
+| `VALIDATION_ERROR` | 422 |
+| `MODEL_UNAVAILABLE` | 503 |
+| `MODEL_TIMEOUT` | 504 |
+| `DB_UNAVAILABLE` | 503 |
+| `MISSING_API_KEY` | 503 |
+| `NO_RELEVANT_SOURCES` | — (not an HTTP error; see below) |
+
+### SSE stream — `POST /sessions/{id}/messages`
+
+| Event | Data shape | UI use |
 |---|---|---|
-| GET | `/health` | Liveness |
-| GET | `/health/ready` | DB + Ollama + index status |
-| POST | `/sessions` | New chat |
-| GET | `/sessions` | List chats |
-| GET | `/sessions/{id}` | Messages + artifacts |
-| POST | `/sessions/{id}/messages` | Send message (SSE stream) |
-| GET | `/config/providers` | Active + available providers |
-| GET | `/artifacts/{id}` | Fetch one artifact |
-| POST | `/admin/ingest` | Trigger (re)ingestion |
+| `status` | `{"stage": "retrieving" \| "generating"}` | Progress indicator |
+| `token` | `{"text": "..."}` | Streaming text append |
+| `citations` | `[Citation, ...]` | Source chips |
+| `artifact` | `ArtifactSummary` | Opens artifact viewer |
+| `done` | `{"message_id": "...", "no_sources": false}` | Ends stream |
+| `error` | `ErrorBody` | Friendly error message |
 
-- A Pydantic request and response model for every endpoint (no untyped dicts).
-- One error shape everywhere: `{ "error": { "code": "...", "message": "...", "request_id": "..." } }`
-- Fixed error codes: `MODEL_UNAVAILABLE`, `MODEL_TIMEOUT`, `NO_RELEVANT_SOURCES`, `DB_UNAVAILABLE`, `MISSING_API_KEY`, `VALIDATION_ERROR`
-- A global exception handler maps every error to this shape; never return a raw stack trace.
-- Request-ID middleware adds `request_id` to logs and error payloads.
+### Design decisions (locked)
+
+1. **`NO_RELEVANT_SOURCES` is not an HTTP error.** Refusing to answer is expected product behaviour — not a failure. The assistant streams a clear "transcripts don't cover this" reply; `done` carries `no_sources: true`. Logged for refusal-rate measurement (plan success metric ≥ 90%).
+2. **`/admin/ingest` has no authentication.** Local-only endpoint; fits the no-auth scope choice. Documented in README.
 
 ---
 
