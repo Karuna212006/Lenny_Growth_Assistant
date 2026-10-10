@@ -35,16 +35,16 @@ Due: **12/10/26 EOD** (read as 12 Oct 2026). Today is 9 Oct, so you have about 3
 - [x] At least one **cloud LLM** integrated (Anthropic or OpenAI-compatible)
 - [x] **Ollama local model is mandatory for the demo**
 - [x] Selected provider **visible in UI or config**; fallback behavior documented
-- [ ] Data source is **Lenny's Podcast / Newsletter transcript repository**
-- [ ] Ingestion explained: load, chunk/select, index, refresh, trace to source
-- [ ] Answers **cite/identify the transcript source**
-- [ ] Answers **strictly from transcripts**; says so when material doesn't support an answer
-- [ ] Handles follow-ups and keeps session context
-- [ ] **Ship 30 for 30 skill/tool** exists (not a one-off prompt)
-- [ ] Essay ~**1,250 words**, strong hook, narrative progression, headings + bullets + selective bold, specific takeaway, claims grounded in transcripts
-- [ ] Markdown or HTML/CSS artifacts generated on request
-- [ ] **Artifact Viewer renders beside the chat** (in-app, not raw code, no redirect)
-- [ ] Generated HTML treated as **untrusted**; isolation/sanitization implemented **and explained**
+- [x] Data source is **Lenny's Podcast / Newsletter transcript repository**
+- [x] Ingestion explained: load, chunk/select, index, refresh, trace to source
+- [x] Answers **cite/identify the transcript source**
+- [x] Answers **strictly from transcripts**; says so when material doesn't support an answer
+- [x] Handles follow-ups and keeps session context
+- [x] **Ship 30 for 30 skill/tool** exists (not a one-off prompt)
+- [x] Essay ~**1,250 words**, strong hook, narrative progression, headings + bullets + selective bold, specific takeaway, claims grounded in transcripts
+- [x] Markdown or HTML/CSS artifacts generated on request
+- [x] **Artifact Viewer renders beside the chat** (in-app, not raw code, no redirect)
+- [x] Generated HTML treated as **untrusted**; isolation/sanitization implemented **and explained**
 - [x] One-command startup (Docker Compose or equivalent)
 - [x] `.env.example` with safe defaults; **no secrets committed**
 - [x] Structured logs covering model, retrieval, database, artifact-rendering failures
@@ -87,15 +87,15 @@ Due: **12/10/26 EOD** (read as 12 Oct 2026). Today is 9 Oct, so you have about 3
 
 Write this first, short and sharp (about one page).
 
-- [ ] **User & problem:** Primary user = a PM / growth lead on the client's team. Job = get trustworthy, source-backed answers and turn them into publishable content fast. Pain = searching hours of transcripts manually; generic AI answers that can't be trusted.
-- [ ] **Success metrics (pick 2–3, make them measurable):**
+- [x] **User & problem:** Primary user = a PM / growth lead on the client's team. Job = get trustworthy, source-backed answers and turn them into publishable content fast. Pain = searching hours of transcripts manually; generic AI answers that can't be trusted.
+- [x] **Success metrics (pick 2–3, make them measurable):**
   - % of answers with at least one valid citation (target: ≥ 95% on your eval set)
   - % of out-of-scope questions correctly refused (target: ≥ 90%)
   - Median time to first token (target: under X s on local model)
   - Essay word count within ±10% of 1,250
-- [ ] **Assumptions** (record at least 6): e.g. single-tenant, no login (session = anonymous user ID), English only, transcripts are text, local model is small so quality is lower, cloud key is optional, embeddings are local for both modes
-- [ ] **Scope in / out** with reasons
-- [ ] **Risks & trade-offs:** hallucination, latency, cost, local-model quality, data leakage, unsafe artifact rendering — each with a mitigation
+- [x] **Assumptions** (record at least 6): e.g. single-tenant, no login (session = anonymous user ID), English only, transcripts are text, local model is small so quality is lower, cloud key is optional, embeddings are local for both modes
+- [x] **Scope in / out** with reasons
+- [x] **Risks & trade-offs:** hallucination, latency, cost, local-model quality, data leakage, unsafe artifact rendering — each with a mitigation
 
 ---
 
@@ -123,7 +123,7 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 | `chunks` | id, episode_id, text, speaker, start_time, chunk_index, embedding (vector) |
 
 - [x] Indexes: `messages(session_id, created_at)`, vector index on `chunks.embedding`
-- [ ] Draw an ER diagram for `architecture.md`
+- [x] Draw an ER diagram for `architecture.md`
 
 ### 4.3 API contract (draft)
 
@@ -144,18 +144,18 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 - [x] Error codes defined: `MODEL_UNAVAILABLE`, `MODEL_TIMEOUT`, `NO_RELEVANT_SOURCES`, `DB_UNAVAILABLE`, `MISSING_API_KEY`, `VALIDATION_ERROR`
 
 ### 4.4 Agent routing design
-- [ ] Router decides intent: `qa` | `essay` | `artifact` | `out_of_scope`
-- [ ] Tools/skills: `retrieve_transcripts`, `ship30_essay` (skill), `create_artifact`
-- [ ] Flow for `qa`: rewrite follow-up into standalone query → retrieve → check relevance threshold → answer with citations or refuse
-- [ ] Flow for `essay`: retrieve → outline → draft by section → word-count check → grounding check → revise
-- [ ] Flow for `artifact`: take current conversation → generate MD/HTML → validate → store → return artifact ID
-- [ ] Draw a routing diagram for `architecture.md`
+- [x] Router decides intent: `qa` | `essay` | `artifact` | `out_of_scope`
+- [x] Tools/skills: `retrieve_transcripts`, `ship30_essay` (skill), `create_artifact`
+- [x] Flow for `qa`: rewrite follow-up into standalone query → retrieve → check relevance threshold → answer with citations or refuse
+- [x] Flow for `essay`: retrieve → outline → draft by section → word-count check → grounding check → revise
+- [x] Flow for `artifact`: take current conversation → generate MD/HTML → validate → store → return artifact ID
+- [x] Draw a routing diagram for `architecture.md`
 
 ### 4.5 Retrieval design
-- [ ] Chunking: split by speaker turns, group to roughly 300–500 tokens, small overlap, keep episode/guest/timestamp metadata
-- [ ] Retrieval: top-k vector search (k about 6–8), similarity threshold for "not supported"
-- [ ] Refresh: content hash per episode → re-embed only changed/new files
-- [ ] Traceability: every chunk links to episode title + source path/URL
+- [x] Chunking: split by speaker turns, group to roughly 300–500 tokens, small overlap, keep episode/guest/timestamp metadata
+- [x] Retrieval: top-k vector search (k about 6–8), similarity threshold for "not supported"
+- [x] Refresh: content hash per episode → re-embed only changed/new files
+- [x] Traceability: every chunk links to episode title + source path/URL
 
 ### 4.6 Model toggle design
 - [x] `.env`: `LLM_PROVIDER=ollama|openai_compatible`, `OLLAMA_MODEL`, `OPENAI_COMPAT_API_KEY` (optional), timeouts
@@ -164,19 +164,19 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 - [ ] Active provider shown in UI header/badge
 
 ### 4.7 Security design (artifacts)
-- [ ] Render HTML in `<iframe sandbox>` **without** `allow-same-origin`
-- [ ] Default: **no scripts** (sandbox without `allow-scripts`); document this choice
-- [ ] Inject strict CSP into the iframe document: `default-src 'none'; style-src 'unsafe-inline'; img-src data:`
-- [ ] Sanitize with DOMPurify (or server-side sanitizer) as a second layer; strip `<script>`, event handlers, `<iframe>`, `<form>`, external URLs
-- [ ] Markdown rendered with sanitization too
+- [x] Render HTML in `<iframe sandbox>` **without** `allow-same-origin`
+- [x] Default: **no scripts** (sandbox without `allow-scripts`); document this choice
+- [x] Inject strict CSP into the iframe document: `default-src 'none'; style-src 'unsafe-inline'; img-src data:`
+- [x] Sanitize with DOMPurify (or server-side sanitizer) as a second layer; strip `<script>`, event handlers, `<iframe>`, `<form>`, external URLs
+- [x] Markdown rendered with sanitization too
 - [ ] Viewer shows a small "Allowed / Blocked" panel so the evaluator sees it
-- [ ] Log blocked content events
+- [x] Log blocked content events
 
 ### 4.8 Deployment topology
-- [ ] Compose services: `frontend`, `api`, `db` (pgvector image), `ollama`, optional `ingest` one-shot job
-- [ ] Startup order with health checks (`db` → `ollama` pulls models → `api` → `frontend`)
-- [ ] Persistent volumes for DB and Ollama models
-- [ ] Draw topology diagram for `architecture.md`
+- [x] Compose services: `frontend`, `api`, `db` (pgvector image), `ollama`, optional `ingest` one-shot job
+- [x] Startup order with health checks (`db` → `ollama` pulls models → `api` → `frontend`)
+- [x] Persistent volumes for DB and Ollama models
+- [x] Draw topology diagram for `architecture.md`
 
 **Phase 1 exit check:** can someone read your design and know every table, endpoint, and flow? If yes, move on.
 
@@ -221,57 +221,57 @@ Do this on paper / in `architecture.md` before writing code. Decide, write down,
 
 ## 8. Phase 5 — Knowledge Base
 
-- [ ] Get the transcript repo the brief points to (confirm the exact source) and note its license/terms
-- [ ] Loader + parser (extract title, guest, speaker turns)
-- [ ] Chunker (per design 4.5)
-- [ ] Embedding + store in pgvector
-- [ ] Incremental refresh via content hash
-- [ ] Retrieval function returns chunks + source metadata + scores
-- [ ] Empty/low-score retrieval → `NO_RELEVANT_SOURCES` path
+- [x] Get the transcript repo the brief points to (confirm the exact source) and note its license/terms
+- [x] Loader + parser (extract title, guest, speaker turns)
+- [x] Chunker (per design 4.5)
+- [x] Embedding + store in pgvector
+- [x] Incremental refresh via content hash
+- [x] Retrieval function returns chunks + source metadata + scores
+- [x] Empty/low-score retrieval → `NO_RELEVANT_SOURCES` path
 - [ ] Build a **small eval set** (15–20 questions: 12 answerable, 5 out-of-scope) so you can measure the success metric
-- [ ] Test: known question retrieves the expected episode
+- [x] Test: known question retrieves the expected episode
 
 ## 9. Phase 6 — Agent Layer & Routing
 
-- [ ] Router implemented (intent classification, with a simple rule fallback if the local model misroutes)
-- [ ] QA flow with citations in a consistent format (`[Episode title — Guest]`)
-- [ ] Follow-up handling via query rewriting using session history
-- [ ] History trimming/summarizing so long chats don't overflow the context
-- [ ] Out-of-scope / unsupported → explicit "transcripts don't cover this" reply
-- [ ] Test: routing returns the correct intent for sample prompts
+- [x] Router implemented (intent classification, with a simple rule fallback if the local model misroutes)
+- [x] QA flow with citations in a consistent format (`[Episode title — Guest]`)
+- [x] Follow-up handling via query rewriting using session history
+- [x] History trimming/summarizing so long chats don't overflow the context
+- [x] Out-of-scope / unsupported → explicit "transcripts don't cover this" reply
+- [x] Test: routing returns the correct intent for sample prompts
 
 ## 10. Phase 7 — Ship 30 for 30 Skill
 
-- [ ] **Read the Ship 30 for 30 guide** (linked in the brief) and write down its principles
-- [ ] Encode them in a `SKILL.md`-style file: structure, hook rules, formatting rules, word target, takeaway rule, grounding rule
-- [ ] Skill pipeline: outline → section drafts → word count check → grounding check → revise
-- [ ] Output formatting: headings, bullets, selective bold
-- [ ] Verify: about 1,250 words (measure it in a test), has hook, has specific takeaway, claims map to retrieved chunks
+- [x] **Read the Ship 30 for 30 guide** (linked in the brief) and write down its principles
+- [x] Encode them in a `SKILL.md`-style file: structure, hook rules, formatting rules, word target, takeaway rule, grounding rule
+- [x] Skill pipeline: outline → section drafts → word count check → grounding check → revise
+- [x] Output formatting: headings, bullets, selective bold
+- [x] Verify: about 1,250 words (measure it in a test), has hook, has specific takeaway, claims map to retrieved chunks
 - [ ] Note in the README how the skill is structured and how to edit it
 
 ## 11. Phase 8 — Artifact Generation & Storage
 
-- [ ] `create_artifact` tool: Markdown or complete HTML/CSS from the current conversation
-- [ ] Validate output (non-empty, size limit, type)
-- [ ] Store in `artifacts` table linked to session and message
-- [ ] Return artifact ID + type in the message response
-- [ ] Log artifact generation failures
+- [x] `create_artifact` tool: Markdown or complete HTML/CSS from the current conversation
+- [x] Validate output (non-empty, size limit, type)
+- [x] Store in `artifacts` table linked to session and message
+- [x] Return artifact ID + type in the message response
+- [x] Log artifact generation failures
 
 ---
 
 ## 12. Phase 9 — Frontend
 
-- [ ] Layout: sidebar (sessions) | chat | **artifact viewer beside chat**
-- [ ] New chat button; session list persists after refresh
-- [ ] Streaming messages with visible states: thinking, retrieving sources, generating, done, error
-- [ ] Citations shown as clickable chips/cards with episode + guest
-- [ ] Provider badge visible (e.g. "Ollama · model-name")
-- [ ] Artifact viewer: Markdown rendered, HTML in the sandbox iframe, tabs for Preview / Code, copy + download
-- [ ] "Allowed / Blocked" security note in the viewer
-- [ ] Empty states (no chats yet, no sources found) and friendly error messages
-- [ ] Responsive: viewer becomes a tab/drawer on small screens
-- [ ] Accessibility: keyboard navigation, focus states, labels, contrast, `aria-live` for streaming
-- [ ] Look at the "Impeccable" resource from the brief for design guidance, and note which principles you used in `design.md`
+- [x] Layout: sidebar (sessions) | chat | **artifact viewer beside chat**
+- [x] New chat button; session list persists after refresh
+- [x] Streaming messages with visible states: thinking, retrieving sources, generating, done, error
+- [x] Citations shown as clickable chips/cards with episode + guest
+- [x] Provider badge visible (e.g. "Ollama · model-name")
+- [x] Artifact viewer: Markdown rendered, HTML in the sandbox iframe, tabs for Preview / Code, copy + download
+- [x] "Allowed / Blocked" security note in the viewer
+- [x] Empty states (no chats yet, no sources found) and friendly error messages
+- [x] Responsive: viewer becomes a tab/drawer on small screens
+- [x] Accessibility: keyboard navigation, focus states, labels, contrast, `aria-live` for streaming
+- [x] Look at the "Impeccable" resource from the brief for design guidance, and note which principles you used in `design.md`
 
 ---
 
@@ -290,13 +290,13 @@ Test each failure by actually causing it:
 ## 14. Phase 11 — Tests
 
 Automated (keep them meaningful, not many):
-- [ ] API: health, create session, validation error shape
-- [ ] Persistence: messages saved with timestamps; sessions isolated
-- [ ] Retrieval: known query returns expected source; empty result path
-- [ ] Routing: intents classified correctly for sample prompts
-- [ ] Provider config: switching provider via env, missing key behavior
-- [ ] Artifact sanitization: script/event handler removed
-- [ ] Essay: word count within tolerance (can mock the LLM)
+- [x] API: health, create session, validation error shape
+- [x] Persistence: messages saved with timestamps; sessions isolated
+- [x] Retrieval: known query returns expected source; empty result path
+- [x] Routing: intents classified correctly for sample prompts
+- [x] Provider config: switching provider via env, missing key behavior
+- [x] Artifact sanitization: script/event handler removed
+- [x] Essay: word count within tolerance (can mock the LLM)
 
 Manual:
 - [ ] Short **manual UI test plan** file (steps + expected result): new chat, ask, follow-up, out-of-scope, essay, artifact, provider badge, mobile width, keyboard-only

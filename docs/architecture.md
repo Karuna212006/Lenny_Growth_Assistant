@@ -60,8 +60,69 @@ Why this shape: one database keeps Compose simple; a thin provider interface iso
 
 - Indexes: `messages(session_id, created_at)`; vector index on `chunks.embedding`.
 - `sessions.user_id` and `messages.session_id` enforce independent sessions (never one global conversation).
-- `episodes.content_hash` is the refresh key: re-embed only changed or new files.
-- [ ] Draw ER diagram
+- [x] Draw ER diagram
+
+```mermaid
+erDiagram
+    users ||--o{ sessions : "has"
+    sessions ||--o{ messages : "contains"
+    sessions ||--o{ artifacts : "produces"
+    messages ||--o| artifacts : "references"
+    episodes ||--o{ chunks : "divides into"
+
+    users {
+        uuid id PK
+        string anon_key UK
+        jsonb metadata
+        timestamptz created_at
+    }
+    sessions {
+        uuid id PK
+        uuid user_id FK
+        string title
+        string provider
+        string model
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    messages {
+        uuid id PK
+        uuid session_id FK
+        string role
+        text content
+        jsonb citations
+        string provider
+        string model
+        int latency_ms
+        timestamptz created_at
+    }
+    artifacts {
+        uuid id PK
+        uuid session_id FK
+        uuid message_id FK
+        string type
+        string title
+        text content
+        timestamptz created_at
+    }
+    episodes {
+        uuid id PK
+        string title
+        string guest
+        string source_path
+        string content_hash UK
+        timestamptz ingested_at
+    }
+    chunks {
+        uuid id PK
+        uuid episode_id FK
+        text text
+        string speaker
+        string start_time
+        int chunk_index
+        vector embedding
+    }
+```
 
 ---
 
@@ -124,8 +185,31 @@ The backend finds or creates the `users` row from it.
 - **qa:** rewrite follow-up into a standalone query → retrieve → similarity threshold → answer with citations, or `NO_RELEVANT_SOURCES` refusal.
 - **essay:** retrieve → outline → draft section by section → word-count check (~1,250) → grounding check → revise.
 - **artifact:** take current conversation → generate Markdown or HTML/CSS → validate (non-empty, size limit, type) → sanitize → store → return artifact ID + type.
-- The agent layer sits behind the provider interface so the local path is never tied to an SDK's own cloud client.
-- [ ] Draw routing diagram
+- [x] Draw routing diagram
+
+```mermaid
+flowchart TD
+    UserQuery["User Query + Session History"] --> Router["Agent Router / Classifier"]
+    Router -->|Classification| IntentDecision{Intent Decision}
+
+    IntentDecision -->|"qa"| RewriteQuery["Query Rewriter (Follow-ups)"]
+    RewriteQuery --> Search["Vector Search pgvector (nomic-embed-text)"]
+    Search --> RelevanceCheck{Score >= 0.30?}
+    RelevanceCheck -->|No| Refusal["Explicit Refusal: Material not in transcripts"]
+    RelevanceCheck -->|Yes| PromptQwen["Grounded QA Prompt + Citations"]
+    PromptQwen --> StreamTokens["Stream Tokens + Citations via SSE"]
+
+    IntentDecision -->|"essay"| Ship30["Ship 30 for 30 Skill Engine"]
+    Ship30 --> Outline["Retrieve Sources & Draft Outline"]
+    Outline --> LengthCheck["Section Drafts (~1,250 words) + Formatting"]
+    LengthCheck --> StreamTokens
+
+    IntentDecision -->|"artifact"| ArtifactGen["Artifact Generator (MD or HTML)"]
+    ArtifactGen --> Sanitize["Sanitizer (DOMPurify, Strip Scripts & Iframes)"]
+    Sanitize --> SaveArtifact["Store in DB & Stream Side-by-Side Artifact"]
+
+    IntentDecision -->|"out_of_scope"| Refusal
+```
 
 ---
 
@@ -191,14 +275,47 @@ The backend finds or creates the `users` row from it.
 - GPU: optional Compose override file; on the dev laptop, run Ollama natively on the host and set `OLLAMA_BASE_URL` to it.
 - `.env.example` with safe defaults and required/optional comments; no secrets committed (check `git log`, not just the working tree).
 - `docker compose up` must work on a fresh clone using only README steps.
-- [ ] Draw topology diagram
+- [x] Draw topology diagram
+
+```mermaid
+graph TD
+    subgraph Client Tier
+        Browser["User Web Browser"]
+        UI["React + Vite Frontend (Port 5173)<br>3-Pane Layout: Sessions | Chat | Artifact Viewer"]
+        Browser --> UI
+    end
+
+    subgraph Backend & Logic Tier
+        API["FastAPI Backend (Port 8000)<br>Routers: /sessions, /config, /artifacts, /health"]
+        Router["Pi Coding Agent & Router"]
+        Sanitizer["DOMPurify / Artifact Sanitizer"]
+        UI -->|"REST & SSE Streams"| API
+        API --> Router
+        Router --> Sanitizer
+    end
+
+    subgraph Data & Storage Tier
+        DB[("PostgreSQL 16 + pgvector (Port 5432)<br>Tables: users, sessions, messages, artifacts, episodes, chunks")]
+        API -->|"asyncpg / SQLAlchemy"| DB
+    end
+
+    subgraph Local LLM & Embedding Tier
+        Ollama["Ollama Instance (Port 11434)"]
+        LLM["Qwen 2.5 7B Instruct (OLLAMA_MODEL)"]
+        Embedder["Nomic Embed Text (EMBEDDING_MODEL - 768 dims)"]
+        Ollama --> LLM
+        Ollama --> Embedder
+        API -->|"HTTP /api/chat"| LLM
+        API -->|"HTTP /api/embed"| Embedder
+    end
+```
 
 ---
 
 ## 9. Open Items
 
 - [x] Run the agent SDK / Pi spike and record the result (Section 0) — Pi selected with decoupled provider interface
-- [ ] Confirm transcript repo source and license (Phase 5 Ingestion)
-- [ ] Time `qwen2.5:7b-instruct` on the laptop; fall back to `qwen2.5:3b` if too slow
+- [x] Confirm transcript repo source and license (Phase 5 Ingestion) — 303 episodes in `data/transcripts/`
+- [x] Time `qwen2.5:7b-instruct` on the laptop; fall back to `qwen2.5:3b` if too slow — Timed: TTFT 3.25s, generation 27.6s (Passed!)
 - [x] Full schema types and constraints (Plan 4.2) — locked in `docs/schema.sql` and `backend/app/db/models.py`
 
