@@ -58,6 +58,39 @@ class TestProviderInterface(unittest.IsolatedAsyncioTestCase):
         available = await provider.is_available()
         self.assertFalse(available)
 
+    def test_embedder_factory(self):
+        """Verify get_embedder returns OllamaEmbedder."""
+        from backend.app.services.providers import get_embedder, OllamaEmbedder
+        embedder = get_embedder()
+        self.assertIsInstance(embedder, OllamaEmbedder)
+
+    async def test_ollama_embedder_prefix_formatting(self):
+        """Verify OllamaEmbedder correctly applies document and query task prefixes."""
+        from backend.app.services.providers.ollama import OllamaEmbedder
+        embedder = OllamaEmbedder(base_url="http://mock-url:11434")
+
+        captured_inputs = []
+
+        async def mock_post(url, json=None, **kwargs):
+            nonlocal captured_inputs
+            captured_inputs.extend(json.get("input", []))
+            # Return dummy 768 float vectors
+            return httpx.Response(
+                200,
+                json={"embeddings": [[0.1] * 768 for _ in json.get("input", [])]},
+                request=httpx.Request("POST", url),
+            )
+
+        with patch("httpx.AsyncClient.post", side_effect=mock_post):
+            # Test document prefix
+            await embedder.embed(["test doc text"], kind="document")
+            self.assertEqual(captured_inputs[-1], "search_document: test doc text")
+
+            # Test query prefix
+            await embedder.embed(["test query text"], kind="query")
+            self.assertEqual(captured_inputs[-1], "search_query: test query text")
+
 
 if __name__ == "__main__":
     unittest.main()
+
