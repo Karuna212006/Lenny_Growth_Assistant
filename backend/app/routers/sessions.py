@@ -39,14 +39,24 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
 async def get_or_create_user(db: AsyncSession, anon_key: str) -> User:
-    """Find user by anon_key or create a new row."""
+    """Find user by anon_key or create a new row safely handling concurrent requests."""
     res = await db.execute(select(User).where(User.anon_key == anon_key))
     user = res.scalar_one_or_none()
-    if not user:
+    if user:
+        return user
+    try:
         user = User(anon_key=anon_key)
         db.add(user)
         await db.flush()
-    return user
+        return user
+    except Exception:
+        await db.rollback()
+        res = await db.execute(select(User).where(User.anon_key == anon_key))
+        user = res.scalar_one_or_none()
+        if user:
+            return user
+        raise
+
 
 
 def resolve_anon_key(x_anon_key: str | None, anon_key_param: str | None) -> str:
@@ -219,20 +229,42 @@ async def send_message(
         for m in history_messages
     ]
 
+    from backend.app.agents.orchestrator import run_agent_pipeline
+
     async def event_generator() -> AsyncGenerator[str, None]:
         start_time = time.time()
-        # Stage: retrieving / generating
-        yield f"event: status\ndata: {json.dumps({'stage': 'generating'})}\n\n"
-
-        assistant_text_chunks: list[str] = []
         provider = get_provider(session.provider)
+        citations_collected: list[dict[str, Any]] = []
+        full_text = ""
+        no_sources = False
 
         try:
-            async for token in provider.chat(chat_history, stream=True):
-                assistant_text_chunks.append(token)
-                yield f"event: token\ndata: {json.dumps({'text': token})}\n\n"
+            async for item in run_agent_pipeline(
+                prompt=body.content,
+                history=chat_history,
+                provider=provider,
+                db=db,
+                session_id=session.id,
+            ):
+                event_name = item.get("event")
+                event_data = item.get("data", {})
 
-            full_reply = "".join(assistant_text_chunks)
+                if event_name == "status":
+                    yield f"event: status\ndata: {json.dumps(event_data)}\n\n"
+                elif event_name == "citations":
+                    citations_collected = event_data.get("citations", [])
+                    yield f"event: citations\ndata: {json.dumps(citations_collected)}\n\n"
+                elif event_name == "artifact":
+                    yield f"event: artifact\ndata: {json.dumps(event_data)}\n\n"
+                elif event_name == "token":
+                    t_val = event_data.get("text") or event_data.get("token") or ""
+                    yield f"event: token\ndata: {json.dumps({'text': t_val, 'token': t_val})}\n\n"
+                elif event_name == "done":
+                    full_text = event_data.get("full_text", "")
+                    no_sources = event_data.get("no_sources", False)
+                    if not citations_collected:
+                        citations_collected = event_data.get("citations", [])
+
             latency_ms = int((time.time() - start_time) * 1000)
 
             # Persist assistant reply in a fresh db session
@@ -240,18 +272,18 @@ async def send_message(
                 asst_msg = Message(
                     session_id=session.id,
                     role="assistant",
-                    content=full_reply,
+                    content=full_text,
                     provider=session.provider,
                     model=session.model,
                     latency_ms=latency_ms,
-                    citations=[],
+                    citations=citations_collected,
                 )
                 write_db.add(asst_msg)
                 await write_db.commit()
                 await write_db.refresh(asst_msg)
                 asst_id = str(asst_msg.id)
 
-            yield f"event: done\ndata: {json.dumps({'message_id': asst_id, 'no_sources': False})}\n\n"
+            yield f"event: done\ndata: {json.dumps({'message_id': asst_id, 'no_sources': no_sources})}\n\n"
 
         except AppError as app_err:
             error_data = {

@@ -7,13 +7,13 @@ Ensures application logic is completely decoupled from any specific LLM provider
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import AsyncIterator, Any
+from typing import AsyncIterator, Any, Literal
 import httpx
 from backend.app.core.exceptions import AppError
 
 
 class BaseLLMProvider(ABC):
-    """Abstract base class that all LLM providers must implement."""
+    """Abstract base class that all chat LLM providers must implement."""
 
     @abstractmethod
     async def chat(
@@ -36,15 +36,7 @@ class BaseLLMProvider(ABC):
 
     @abstractmethod
     async def embed(self, text: str) -> list[float]:
-        """
-        Generate dense vector embedding for a text chunk.
-
-        Args:
-            text: Text string to embed.
-
-        Returns:
-            List of floats representing the embedding vector.
-        """
+        """Generate dense vector embedding for a text chunk (legacy single-text method)."""
         ...
 
     @abstractmethod
@@ -55,6 +47,39 @@ class BaseLLMProvider(ABC):
         Returns:
             True if healthy and reachable, False otherwise.
         """
+        ...
+
+
+class BaseEmbedder(ABC):
+    """
+    Abstract interface for dense embedding generation (LOCKED 4.6).
+    Decoupled from chat providers so switching chat models never touches the index.
+    """
+
+    @abstractmethod
+    async def embed(
+        self,
+        texts: list[str],
+        kind: Literal["document", "query"] = "document",
+    ) -> list[list[float]]:
+        """
+        Generate dense vector embeddings for a batch of texts.
+
+        Applies task prefixes ('search_document: ' or 'search_query: ') required
+        by nomic-embed-text to optimize retrieval quality.
+
+        Args:
+            texts: List of text strings to embed.
+            kind: 'document' for chunks at ingestion, 'query' for user search queries.
+
+        Returns:
+            List of 768-dimensional float embedding vectors.
+        """
+        ...
+
+    @abstractmethod
+    async def is_available(self) -> bool:
+        """Check if the embedding service and model are ready."""
         ...
 
 
