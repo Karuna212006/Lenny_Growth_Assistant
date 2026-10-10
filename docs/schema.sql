@@ -44,10 +44,6 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_messages_touch_session
-AFTER INSERT ON messages
-FOR EACH ROW EXECUTE FUNCTION touch_session();
-
 -- -------------------------------------------------------------
 -- messages
 -- Full chat history. citations is an array of source references:
@@ -66,6 +62,11 @@ CREATE TABLE messages (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX ix_messages_session ON messages (session_id, created_at);
+
+CREATE TRIGGER trg_messages_touch_session
+AFTER INSERT ON messages
+FOR EACH ROW EXECUTE FUNCTION touch_session();
+
 
 -- -------------------------------------------------------------
 -- artifacts

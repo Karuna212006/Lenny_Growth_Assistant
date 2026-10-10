@@ -41,8 +41,9 @@ logs/
 # Test / coverage
 .pytest_cache/
 .coverage
+**/.coverage
 htmlcov/
 
-# Transcripts (external content — use download script instead)
+# Transcripts (external content - use download script instead)
 data/transcripts/*
 !data/transcripts/.gitkeep
