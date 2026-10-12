@@ -13,12 +13,12 @@ Scaffold only: component boundaries, contracts, and schemas. Paste into `docs/ar
 | Database | PostgreSQL + pgvector (local Docker) | One DB for chats and vectors; no paid hosting |
 | Embeddings | Ollama `nomic-embed-text` (768 dims), both modes | Free, local, same index whichever chat model is active |
 | Chat model (default) | Ollama `qwen2.5:7b-instruct` (Q4); fallback `qwen2.5:3b` | **7b preferred** (~15–35 tok/s, better essay/routing quality); drop to 3b (~40–80 tok/s) only if first-token latency >30 s or RAM swaps |
-| Agent layer | **Pi Coding Agent** (spike result: chosen) — thin orchestrator behind the provider interface; no Claude SDK dependency | No paid API key required; Pi talks to any OpenAI-compatible endpoint incl. Ollama |
+| Agent layer | **Anthropic Claude Agent SDK** (spike result: 5/5 PASS) — tool orchestration for grounded QA; thin provider interface for SSE streaming | Tested against local Ollama (`qwen2.5:7b-instruct`) with 100% tool-calling pass rate; see `docs/decisions/agent-layer.md` |
 | Cloud LLM | One OpenAI-compatible provider class (configurable base URL, key optional) | Satisfies "one cloud provider" without paid usage |
 | Streaming | Server-Sent Events | One-way server → client is enough |
 | Identity | Anonymous browser UUID in `localStorage`, sent as a header; stored in `users.anon_key` | No auth system (documented scope choice) |
 
-**Spike result:** ✅ **Pi Coding Agent chosen.** Pi exposes an OpenAI-compatible client interface, so it routes calls through our provider layer to Ollama without modification. No cloud SDK dependency required. The thin provider interface wraps Pi's client so the app never calls Pi or Ollama directly — switching remains a config-only change.
+**Spike result:** ✅ **Anthropic Claude Agent SDK chosen (5/5 PASS).** Tested empirically against local Ollama (`http://localhost:11434`, `qwen2.5:7b-instruct`). The Claude Agent SDK invoked the `retrieve_transcripts` tool in 5 of 5 runs and grounded answers strictly in returned chunks with ~3.28s TTFT. Candidate 2 (Pi Coding Agent `@earendil-works/pi-coding-agent`) was evaluated but scored 0/5 because as an interactive Node TUI CLI it hangs indefinitely in headless Windows subprocess environments without a terminal, offering no Python bindings. Tool calling integrates the Claude SDK pattern in the agent layer, backed by our decoupled provider interface for token streaming.
 
 ---
 
@@ -287,7 +287,7 @@ graph TD
 
     subgraph Backend & Logic Tier
         API["FastAPI Backend (Port 8000)<br>Routers: /sessions, /config, /artifacts, /health"]
-        Router["Pi Coding Agent & Router"]
+        Router["Claude Agent SDK & Router"]
         Sanitizer["DOMPurify / Artifact Sanitizer"]
         UI -->|"REST & SSE Streams"| API
         API --> Router

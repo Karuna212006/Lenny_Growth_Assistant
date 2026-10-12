@@ -10,16 +10,16 @@
 | 0.2 Delete demo.tsx | DONE-VERIFIED | Already removed from git index; `git ls-files \| Select-String demo` returns empty |
 | 0.3 pytest + frontend build | DONE-VERIFIED | 24 passed in 4.84s; vite build ✓ 14.12s |
 | 0.4 Secret scan | DONE-VERIFIED | No real secrets; only local defaults (POSTGRES_PASSWORD=lenny) and empty placeholders |
-| 0.5 Commit pending work | PENDING | |
+| 0.5 Commit pending work | DONE-VERIFIED | Clean working tree; `git status` clean; .env untracked |
 
 ## Phase 1 — Agent layer spike
 
 | Task | Status | Evidence |
 |------|--------|----------|
-| 1.1 Read SDK docs | PENDING | |
-| 1.2 Spike scripts | PENDING | |
-| 1.3 Decision doc | PENDING | |
-| 1.4 Integration or honest doc | PENDING | |
+| 1.1 Read SDK docs | DONE-VERIFIED | Reviewed Anthropic Python SDK docs & `@earendil-works/pi-coding-agent` npm/GitHub |
+| 1.2 Spike scripts | DONE-VERIFIED | `spike_claude_sdk.py` (5/5 PASS, 100%); `spike_pi_cli.py` (0/5 PASS, 0% hung on TTY) |
+| 1.3 Decision doc | DONE-VERIFIED | Created `docs/decisions/agent-layer.md` with candidate comparison and empirical metrics |
+| 1.4 Integration or honest doc | DONE-VERIFIED | Corrected `docs/architecture.md` lines 16, 21, 290 and `docs/PLAN.md` line 30 |
 
 ## Phase 2 — Ship 30 skill
 
