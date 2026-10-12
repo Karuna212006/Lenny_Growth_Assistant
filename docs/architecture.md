@@ -13,12 +13,12 @@ Scaffold only: component boundaries, contracts, and schemas. Paste into `docs/ar
 | Database | PostgreSQL + pgvector (local Docker) | One DB for chats and vectors; no paid hosting |
 | Embeddings | Ollama `nomic-embed-text` (768 dims), both modes | Free, local, same index whichever chat model is active |
 | Chat model (default) | Ollama `qwen2.5:7b-instruct` (Q4); fallback `qwen2.5:3b` | **7b preferred** (~15–35 tok/s, better essay/routing quality); drop to 3b (~40–80 tok/s) only if first-token latency >30 s or RAM swaps |
-| Agent layer | **Anthropic Claude Agent SDK** (spike result: 5/5 PASS) — tool orchestration for grounded QA; thin provider interface for SSE streaming | Tested against local Ollama (`qwen2.5:7b-instruct`) with 100% tool-calling pass rate; see `docs/decisions/agent-layer.md` |
+| Agent layer | **Anthropic Python SDK tool-use API** (`anthropic==1.13.0`) against Ollama Messages endpoint; thin provider interface for SSE streaming | Real runtime integration in `backend/app/agents/orchestrator.py` invoking `retrieve_transcripts`; `claude-agent-sdk` and Pi Coding Agent attempted in spike (see `docs/decisions/agent-layer.md`) |
 | Cloud LLM | One OpenAI-compatible provider class (configurable base URL, key optional) | Satisfies "one cloud provider" without paid usage |
 | Streaming | Server-Sent Events | One-way server → client is enough |
 | Identity | Anonymous browser UUID in `localStorage`, sent as a header; stored in `users.anon_key` | No auth system (documented scope choice) |
 
-**Spike result:** ✅ **Anthropic Claude Agent SDK chosen (5/5 PASS).** Tested empirically against local Ollama (`http://localhost:11434`, `qwen2.5:7b-instruct`). The Claude Agent SDK invoked the `retrieve_transcripts` tool in 5 of 5 runs and grounded answers strictly in returned chunks with ~3.28s TTFT. Candidate 2 (Pi Coding Agent `@earendil-works/pi-coding-agent`) was evaluated but scored 0/5 because as an interactive Node TUI CLI it hangs indefinitely in headless Windows subprocess environments without a terminal, offering no Python bindings. Tool calling integrates the Claude SDK pattern in the agent layer, backed by our decoupled provider interface for token streaming.
+**Spike & Integration result:** ✅ **Anthropic Python SDK (`anthropic==1.13.0`) tool-use API integrated.** Connected against local Ollama's Messages API compatibility layer (`http://localhost:11434/v1/messages`). The `retrieve_transcripts` tool is invoked by the model to parameterize vector search, followed by citation generation and streaming token synthesis. The `claude-agent-sdk` (v0.2.165) was attempted but requires the bundled Claude Code CLI binary and cloud authentication, timing out against local Ollama. Pi Coding Agent (`@earendil-works/pi-coding-agent`) was attempted headlessly on Windows and hung waiting for an interactive TTY console. Full empirical analysis in `docs/decisions/agent-layer.md`.
 
 ---
 

@@ -20,6 +20,9 @@
 | 1.2 Spike scripts | DONE-VERIFIED | `spike_claude_sdk.py` (5/5 PASS, 100%); `spike_pi_cli.py` (0/5 PASS, 0% hung on TTY) |
 | 1.3 Decision doc | DONE-VERIFIED | Created `docs/decisions/agent-layer.md` with candidate comparison and empirical metrics |
 | 1.4 Integration or honest doc | DONE-VERIFIED | Corrected `docs/architecture.md` lines 16, 21, 290 and `docs/PLAN.md` line 30 |
+| 1b.1 SDK identification | DONE-VERIFIED | Proved `anthropic==1.13.0` messages API; `claude-agent-sdk==0.2.165` needs Claude Code CLI; Pi hung on TTY |
+| 1b.2 Runtime integration | DONE-VERIFIED | `orchestrator.py` wired to `invoke_retrieval_tool_agent`; verified end-to-end; 26 unit tests pass |
+| 1b.3 Honest docs update | DONE-VERIFIED | `docs/decisions/agent-layer.md`, `docs/architecture.md`, `README.md`, `docs/PLAN.md` relabeled |
 
 ## Phase 2 — Ship 30 skill
 

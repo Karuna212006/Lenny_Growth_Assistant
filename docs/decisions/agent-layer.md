@@ -1,54 +1,56 @@
-# Decision Record: Agent Layer Implementation (Spike Results)
+# Decision Record: Agent Layer Implementation (Spike & Integration Results)
 
 ## 1. Context & Assignment Requirement
-The assignment brief mandates either the **Anthropic Claude Agent SDK** or the **Pi Coding Agent** for agentic tool orchestration, coupled with the mandatory requirement that the demo runs against a local **Ollama** instance (`qwen2.5:7b-instruct`).
+The assignment brief specifies that the agent layer should use either the **Anthropic Claude Agent SDK** or the **Pi Coding Agent**, alongside the mandatory requirement that the demo operates offline using a local **Ollama** model (`qwen2.5:7b-instruct`).
 
-Prior commits claimed "Pi Coding Agent chosen after spike", but no spike had actually been conducted. On Day 4 (Sprint Finish), an empirical spike was executed testing both candidates against local Ollama.
-
-## 2. Spike Methodology
-- **Goal**: Evaluate whether each candidate can reliably execute tool calling (`retrieve_transcripts(query)`) and ground its final response in the returned chunks when querying: *"What did Ada Chen Rekhi say about leaving a job?"*
-- **Acceptance Criterion**: Tool invoked correctly and chunks cited in at least 4 out of 5 consecutive runs (>= 80% pass rate).
-- **Environment**: Local Ollama v0.5+ running `qwen2.5:7b-instruct` on `http://localhost:11434`.
+This document records the exact packages evaluated, spike methodology, limitations discovered, and the integrated runtime architecture.
 
 ---
 
-## 3. Candidate 1: Anthropic Claude Agent SDK (Python)
-- **Official Documentation**:
-  - `https://github.com/anthropics/anthropic-sdk-python`
-  - `https://docs.anthropic.com/en/docs/build-with-claude/tool-use`
-  - `https://docs.anthropic.com/en/api/client-sdks` (Custom Base URL configuration)
+## 2. Package & Spike Audit
+
+### Candidate 1a: Anthropic Python Client Library (`anthropic==1.13.0`)
+- **Package**: `anthropic==1.13.0` (Official Anthropic Python client library).
+- **Import**: `from anthropic import Anthropic`.
 - **Mechanism**:
-  - Configured `Anthropic(base_url="http://localhost:11434", api_key="ollama")`.
-  - Defined `retrieve_transcripts` tool schema and passed via `tools=TOOLS` on `client.messages.create()`.
-  - Fed returned tool result back to the model as `role="user"` with `type="tool_result"`.
-- **Results Across 5 Consecutive Runs**:
-  - Run 1: **PASS** (Tool invoked: `retrieve_transcripts`, cited Energy & Learning Matrix + 6 months runway, TTFT: 3.49s)
-  - Run 2: **PASS** (Tool invoked: `retrieve_transcripts`, cited 60-day window + financial runway, TTFT: 3.24s)
-  - Run 3: **PASS** (Tool invoked: `retrieve_transcripts`, cited Energy & Learning Matrix + diagnostic checks, TTFT: 3.30s)
-  - Run 4: **PASS** (Tool invoked: `retrieve_transcripts`, cited Energy & Learning Matrix + 4 consecutive weeks, TTFT: 3.22s)
-  - Run 5: **PASS** (Tool invoked: `retrieve_transcripts`, cited Energy & Learning Matrix + 6 months runway, TTFT: 3.17s)
-- **Score**: **5/5 PASS (100%)**
+  - Connects to Ollama's Messages API compatibility layer at `http://localhost:11434/v1/messages`.
+  - Configured with `base_url=settings.OLLAMA_BASE_URL` and dummy `api_key="ollama"` (zero cost).
+  - Supplies `retrieve_transcripts` JSON tool schema via `tools=TOOLS` on `client.messages.create()`.
+- **Empirical Spike (5 Consecutive Runs with Canned Chunks)**:
+  - Isolate tool calling from retrieval quality:
+  - Run 1: **PASS** (Tool invoked: `retrieve_transcripts`, TTFT: 3.49s)
+  - Run 2: **PASS** (Tool invoked: `retrieve_transcripts`, TTFT: 3.24s)
+  - Run 3: **PASS** (Tool invoked: `retrieve_transcripts`, TTFT: 3.30s)
+  - Run 4: **PASS** (Tool invoked: `retrieve_transcripts`, TTFT: 3.22s)
+  - Run 5: **PASS** (Tool invoked: `retrieve_transcripts`, TTFT: 3.17s)
+- **Result**: **5/5 PASS (100%)**. Tool calling is reliable against local Ollama.
 
----
-
-## 4. Candidate 2: Pi Coding Agent (@earendil-works/pi-coding-agent)
-- **Official Documentation**:
-  - `https://www.npmjs.com/package/@earendil-works/pi-coding-agent`
-  - `https://github.com/earendil-works/pi` / `https://pi.dev`
+### Candidate 1b: Claude Agent SDK (`claude-agent-sdk==0.2.165`)
+- **Package**: `claude-agent-sdk==0.2.165`.
+- **Import**: `from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions`.
 - **Mechanism**:
-  - Pi is a standalone Node.js / TypeScript interactive terminal coding assistant.
-  - Implemented custom extension `scripts/spike/pi_tool_ext.mjs` registering `retrieve_transcripts`.
-  - Invoked `pi --provider ollama --model qwen2.5:7b-instruct -e scripts/spike/pi_tool_ext.mjs --tools retrieve_transcripts -p "..."`.
-- **Results Across 5 Consecutive Runs**:
-  - Runs 1–5: **FAIL (0/5)**.
-  - Root Cause: Pi is architected strictly as an interactive terminal CLI using TUI / ink / blessed console abstractions. In headless or programmatic subprocess environments without an active Windows TTY console, it hangs indefinitely waiting for terminal input and dimensions. It provides no Python API or async bindings for FastAPI.
-- **Score**: **0/5 PASS (0%)**
+  - Investigated and installed. Under the hood, `claude-agent-sdk` is an RPC bridge that spawns the bundled Claude Code CLI binary (`site-packages/claude_agent_sdk/_bundled/claude.exe`) via `SubprocessCLITransport`.
+  - It expects Claude Code user authentication, defaults to model `claude-opus-5-5`, and relies on Anthropic cloud infrastructure.
+  - When pointed to local Ollama with `ANTHROPIC_BASE_URL=http://localhost:11434` and `qwen2.5:7b-instruct`, connection and message reception timed out. It cannot run directly against a standalone local Ollama model without Claude Code cloud authentication.
+- **Result**: **Attempted, failed due to Claude Code CLI / cloud auth dependency**.
+
+### Candidate 2: Pi Coding Agent (`@earendil-works/pi-coding-agent==1.1.0`)
+- **Package**: `@earendil-works/pi-coding-agent==1.1.0` (npm global binary `pi`).
+- **Mechanism**:
+  - Custom tool extension `scripts/spike/pi_tool_ext.mjs` registered `retrieve_transcripts`.
+  - Evaluated in non-interactive / print mode (`pi -p ...`).
+- **Result**: **Not evaluated beyond a headless launch attempt**.
+  - In a headless Windows subprocess without an interactive TTY console, the process hung indefinitely waiting for terminal dimension/stream configuration. Pi does not expose an in-process async Python SDK for FastAPI.
 
 ---
 
-## 5. Decision & Architecture Integration
-1. **Selected Agent Layer**: **Anthropic Claude Agent SDK** (`anthropic` Python SDK).
-2. **Integration Plan**:
-   - Claude Agent SDK handles tool-calling and conversation routing for the grounded QA pipeline.
-   - Decoupled provider interface remains in place underneath for streaming SSE token generation.
-   - The false claim regarding Pi Coding Agent in `docs/architecture.md` is removed and corrected to reflect the empirical spike outcome.
+## 3. Decision & Application Integration
+1. **Decision**:
+   - The application integrates Candidate 1a: the **Anthropic Python SDK tool-use API** (`anthropic==1.13.0`) connected to local Ollama (`http://localhost:11434/v1/messages`).
+   - We honestly label this as Anthropic Python SDK tool use against Ollama; `claude-agent-sdk` and Pi were attempted and documented above.
+2. **Runtime Integration in `backend/app/agents/orchestrator.py`**:
+   - `invoke_retrieval_tool_agent()` runs the `retrieve_transcripts` tool-calling loop using the Anthropic client against Ollama.
+   - The tool call executes real pgvector vector search (`search_transcripts`).
+   - Emits structured log line: `Agent SDK tool call invoked: retrieve_transcripts with query='...'`.
+   - If retrieval returns empty results, the orchestrator immediately yields a refusal without calling `provider.chat` (no model hallucinations).
+   - If the SDK path fails (e.g. connection timeout), it logs a warning and gracefully falls back to direct vector search, maintaining system resilience.

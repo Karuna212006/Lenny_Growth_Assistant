@@ -149,6 +149,86 @@ class TestAgentLayer(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(done_event["data"]["no_sources"])
         self.assertEqual(done_event["data"]["intent"], "qa")
 
+    async def test_orchestrator_tool_calling_invoked(self):
+        """Verify the agent tool-calling step invokes retrieve_transcripts tool and calls search service."""
+        provider = MockProvider()
+        db_mock = AsyncMock()
+
+        fake_chunk = RetrievedChunk(
+            chunk_id=uuid4(),
+            episode_id=uuid4(),
+            episode_title="Onboarding Frameworks",
+            guest="Adam Fishman",
+            source_path="episodes/adam-fishman/transcript.md",
+            chunk_index=0,
+            text="Onboarding is critical.",
+            speaker="Adam Fishman",
+            start_time="00:00:00",
+            score=0.92,
+        )
+
+        mock_tool_block = MagicMock()
+        mock_tool_block.type = "tool_use"
+        mock_tool_block.name = "retrieve_transcripts"
+        mock_tool_block.input = {"query": "onboarding frameworks"}
+
+        mock_response = MagicMock()
+        mock_response.content = [mock_tool_block]
+
+        mock_client = MagicMock()
+        mock_client.messages.create.return_value = mock_response
+
+        with patch("anthropic.Anthropic", return_value=mock_client):
+            with patch("backend.app.agents.orchestrator.search_transcripts", return_value=[fake_chunk]) as mock_search:
+                events = []
+                async for item in run_agent_pipeline(
+                    "What did Adam Fishman say about onboarding?",
+                    history=[],
+                    provider=provider,
+                    db=db_mock,
+                ):
+                    events.append(item)
+
+                mock_client.messages.create.assert_called_once()
+                mock_search.assert_called_with("onboarding frameworks", db=db_mock, top_k=None)
+                self.assertTrue(any(e["event"] == "citations" for e in events))
+
+    async def test_empty_retrieval_refuses_without_model_chat(self):
+        """Verify that when retrieval is empty, assistant immediately refuses and provider.chat is never called."""
+        class SpyProvider(BaseLLMProvider):
+            def __init__(self):
+                self.chat_called = False
+
+            async def chat(self, messages, stream=True):
+                self.chat_called = True
+                yield "Should never be reached"
+
+            async def embed(self, text: str):
+                return [0.1] * 768
+
+            async def is_available(self):
+                return True
+
+        provider = SpyProvider()
+        db_mock = AsyncMock()
+
+        with patch("backend.app.agents.orchestrator.classify_intent", return_value="qa"):
+            with patch("backend.app.agents.orchestrator.search_transcripts", return_value=[]):
+                events = []
+                async for item in run_agent_pipeline(
+                    "Can you tell me about hyper-dimensional wormhole physics?",
+                    history=[],
+                    provider=provider,
+                    db=db_mock,
+                ):
+                    events.append(item)
+
+                self.assertFalse(provider.chat_called, "provider.chat MUST NOT be called to answer when retrieval is empty")
+                done_event = next(e for e in events if e["event"] == "done")
+                self.assertTrue(done_event["data"]["no_sources"])
+                self.assertIn("no relevant discussions were found", done_event["data"]["full_text"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

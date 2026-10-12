@@ -6,7 +6,7 @@
 
 - **Backend:** FastAPI + SQLAlchemy 2 (async) + PostgreSQL + pgvector
 - **Frontend:** React + Vite
-- **Agent:** Pi Coding Agent via provider interface
+- **Agent:** Anthropic Python SDK tool-use API (`anthropic==1.13.0`) against Ollama Messages endpoint
 - **LLM (local):** Ollama `qwen2.5:7b-instruct` + `nomic-embed-text`
 - **LLM (cloud):** Any OpenAI-compatible endpoint (optional)
 
@@ -49,5 +49,6 @@ See [`.env.example`](.env.example) for the full list.
 ## Known Limitations
 
 - Local model quality is lower than GPT-4 / Claude; router uses rule-based fallback
+- Agent layer uses `anthropic` Python client (`anthropic==1.13.0`) tool-use API against Ollama's Messages endpoint with zero-cost dummy key (`api_key="ollama"`). The `claude-agent-sdk` requires bundled Claude Code CLI and cloud auth; Pi was attempted headlessly on Windows and hung on TTY (see `docs/decisions/agent-layer.md`).
 - No authentication — anonymous sessions only (documented scope choice)
 - Cloud LLM path is optional and may be untested on the demo machine

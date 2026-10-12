@@ -20,8 +20,72 @@ from backend.app.agents.prompts import (
 )
 from backend.app.agents.rewriter import rewrite_query
 from backend.app.agents.router import classify_intent, Intent
+import logging
+from backend.app.core.settings import settings
 from backend.app.services.providers.base import BaseLLMProvider
 from backend.app.services.retrieval.search import search_transcripts, RetrievedChunk
+
+logger = logging.getLogger("lenny.agents.orchestrator")
+
+RETRIEVAL_TOOL_SCHEMA = [
+    {
+        "name": "retrieve_transcripts",
+        "description": "Retrieve relevant transcripts from Lenny's podcast archives based on a search query.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query to locate relevant podcast episodes and transcripts",
+                }
+            },
+            "required": ["query"],
+        },
+    }
+]
+
+
+async def invoke_retrieval_tool_agent(
+    search_query: str,
+    db: AsyncSession,
+    top_k: int | None = None,
+) -> list[RetrievedChunk]:
+    """
+    Execute transcript retrieval through the Anthropic Python SDK tool-calling loop.
+    Calls local Ollama's Messages API compatibility layer to invoke the retrieve_transcripts tool,
+    then executes real vector search in pgvector.
+    """
+    model_name = settings.OLLAMA_MODEL if settings.LLM_PROVIDER == "ollama" else (settings.OPENAI_COMPAT_MODEL or "qwen2.5:7b-instruct")
+    base_url = settings.OLLAMA_BASE_URL if settings.LLM_PROVIDER == "ollama" else (settings.OPENAI_COMPAT_BASE_URL or "http://localhost:11434")
+    api_key = settings.OPENAI_COMPAT_API_KEY or "ollama"
+
+    query_to_search = search_query
+
+    try:
+        from anthropic import Anthropic
+        client = Anthropic(base_url=base_url, api_key=api_key, timeout=float(min(settings.LLM_TIMEOUT_SECONDS, 30)))
+        system_prompt = (
+            "You are a podcast research assistant. When asked about podcast topics, "
+            "you MUST call the retrieve_transcripts tool with a precise search query."
+        )
+        response = client.messages.create(
+            model=model_name,
+            max_tokens=256,
+            system=system_prompt,
+            messages=[{"role": "user", "content": search_query}],
+            tools=RETRIEVAL_TOOL_SCHEMA,
+        )
+
+        for block in getattr(response, "content", []):
+            if getattr(block, "type", None) == "tool_use" and block.name == "retrieve_transcripts":
+                query_to_search = block.input.get("query", search_query)
+                logger.info("Agent SDK tool call invoked: %s with query='%s'", block.name, query_to_search)
+                break
+    except Exception as exc:
+        logger.warning("Agent SDK tool call fell back to direct search: %s", exc)
+
+    return await search_transcripts(query_to_search, db=db, top_k=top_k)
+
 
 
 async def run_agent_pipeline(
@@ -114,7 +178,7 @@ async def run_agent_pipeline(
         yield {"event": "status", "data": {"stage": "retrieving"}}
         search_query = await rewrite_query(prompt, history, provider=provider)
         try:
-            retrieved_chunks = await search_transcripts(search_query, db=db, top_k=8)
+            retrieved_chunks = await invoke_retrieval_tool_agent(search_query, db=db, top_k=8)
         except Exception:
             retrieved_chunks = []
 
@@ -178,10 +242,10 @@ async def run_agent_pipeline(
     # Rewrite query if conversational follow-up
     search_query = await rewrite_query(prompt, history, provider=provider)
 
-    # Perform vector search across transcript chunks in pgvector
+    # Perform vector search across transcript chunks in pgvector via agent SDK tool calling
     retrieved_chunks: list[RetrievedChunk] = []
     try:
-        retrieved_chunks = await search_transcripts(search_query, db=db)
+        retrieved_chunks = await invoke_retrieval_tool_agent(search_query, db=db)
     except Exception as exc:
         # DB search error or empty db
         retrieved_chunks = []

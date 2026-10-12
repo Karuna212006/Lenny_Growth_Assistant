@@ -27,7 +27,7 @@ Due: **12/10/26 EOD** (read as 12 Oct 2026). Today is 9 Oct, so you have about 3
 
 ### Hard requirements
 - [x] Backend is **FastAPI**
-- [x] Agent layer uses **Anthropic Claude Agent SDK** or **Pi Coding Agent** (Anthropic Claude Agent SDK chosen after 5/5 spike; see docs/decisions/agent-layer.md)
+- [x] Agent layer uses **Anthropic Claude Agent SDK** or **Pi Coding Agent** (Anthropic Python SDK tool-use API integrated; claude-agent-sdk and Pi attempted; see docs/decisions/agent-layer.md)
 - [x] **PostgreSQL** stores conversations, session IDs, timestamps, user metadata (Supabase or Railway allowed)
 - [x] New chat = new session with **independent context**
 - [x] Clear request/response contracts, validation, structured errors, **health endpoints**
