@@ -18,7 +18,7 @@ from backend.app.agents.prompts import (
     OUT_OF_SCOPE_REFUSAL,
     QA_SYSTEM_PROMPT,
 )
-from backend.app.agents.rewriter import rewrite_query
+from backend.app.agents.rewriter import is_follow_up, rewrite_query
 from backend.app.agents.router import classify_intent, Intent
 import logging
 from backend.app.core.settings import settings
@@ -177,8 +177,12 @@ async def run_agent_pipeline(
     if intent == "essay":
         yield {"event": "status", "data": {"stage": "retrieving"}}
         search_query = await rewrite_query(prompt, history, provider=provider)
+        has_earlier_turn_refs = bool(history) and is_follow_up(prompt)
         try:
-            retrieved_chunks = await invoke_retrieval_tool_agent(search_query, db=db, top_k=8)
+            if has_earlier_turn_refs:
+                retrieved_chunks = await invoke_retrieval_tool_agent(search_query, db=db, top_k=8)
+            else:
+                retrieved_chunks = await search_transcripts(search_query, db=db, top_k=8)
         except Exception:
             retrieved_chunks = []
 
@@ -242,10 +246,16 @@ async def run_agent_pipeline(
     # Rewrite query if conversational follow-up
     search_query = await rewrite_query(prompt, history, provider=provider)
 
-    # Perform vector search across transcript chunks in pgvector via agent SDK tool calling
+    # Perform vector search across transcript chunks in pgvector.
+    # Latency optimization (Phase 1c): If prompt has no references to earlier turns,
+    # skip the extra agent model round-trip (~3.3s overhead) and run vector search directly in code.
     retrieved_chunks: list[RetrievedChunk] = []
+    has_earlier_turn_refs = bool(history) and is_follow_up(prompt)
     try:
-        retrieved_chunks = await invoke_retrieval_tool_agent(search_query, db=db)
+        if has_earlier_turn_refs:
+            retrieved_chunks = await invoke_retrieval_tool_agent(search_query, db=db)
+        else:
+            retrieved_chunks = await search_transcripts(search_query, db=db)
     except Exception as exc:
         # DB search error or empty db
         retrieved_chunks = []

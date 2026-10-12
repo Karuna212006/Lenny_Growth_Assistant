@@ -22,7 +22,11 @@ from backend.app.services.retrieval.search import RetrievedChunk
 class MockProvider(BaseLLMProvider):
     """Mock LLM Provider for deterministic testing."""
 
+    def __init__(self):
+        self.chat_called = False
+
     async def chat(self, messages, stream=True):
+        self.chat_called = True
         # Yield dummy response
         yield "According to [How to build a growth team — Adam Fishman], onboarding is critical."
 
@@ -97,6 +101,7 @@ class TestAgentLayer(unittest.IsolatedAsyncioTestCase):
 
         # Check final done event
         done_event = next(e for e in events if e["event"] == "done")
+        self.assertFalse(provider.chat_called, "provider.chat MUST NOT be called for out-of-scope query")
         self.assertTrue(done_event["data"]["no_sources"])
         self.assertEqual(done_event["data"]["intent"], "out_of_scope")
         self.assertEqual(done_event["data"]["citations"], [])
@@ -150,7 +155,7 @@ class TestAgentLayer(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(done_event["data"]["intent"], "qa")
 
     async def test_orchestrator_tool_calling_invoked(self):
-        """Verify the agent tool-calling step invokes retrieve_transcripts tool and calls search service."""
+        """Verify the agent tool-calling step invokes retrieve_transcripts tool when query references earlier turns."""
         provider = MockProvider()
         db_mock = AsyncMock()
 
@@ -178,12 +183,17 @@ class TestAgentLayer(unittest.IsolatedAsyncioTestCase):
         mock_client = MagicMock()
         mock_client.messages.create.return_value = mock_response
 
+        history = [
+            {"role": "user", "content": "Tell me about Adam Fishman on growth teams."},
+            {"role": "assistant", "content": "He explained growth team structure and metrics."},
+        ]
+
         with patch("anthropic.Anthropic", return_value=mock_client):
             with patch("backend.app.agents.orchestrator.search_transcripts", return_value=[fake_chunk]) as mock_search:
                 events = []
                 async for item in run_agent_pipeline(
-                    "What did Adam Fishman say about onboarding?",
-                    history=[],
+                    "What did he say about onboarding?",
+                    history=history,
                     provider=provider,
                     db=db_mock,
                 ):
@@ -192,6 +202,63 @@ class TestAgentLayer(unittest.IsolatedAsyncioTestCase):
                 mock_client.messages.create.assert_called_once()
                 mock_search.assert_called_with("onboarding frameworks", db=db_mock, top_k=None)
                 self.assertTrue(any(e["event"] == "citations" for e in events))
+
+    async def test_orchestrator_mock_returns_text_without_tool_call(self):
+        """
+        Verify grounding guarantee: if the tool model replies with plain text and NO tool call,
+        retrieval ALWAYS still runs in code (using the query), and the final answer is grounded in chunks.
+        """
+        provider = MockProvider()
+        db_mock = AsyncMock()
+
+        fake_chunk = RetrievedChunk(
+            chunk_id=uuid4(),
+            episode_id=uuid4(),
+            episode_title="Onboarding Frameworks",
+            guest="Adam Fishman",
+            source_path="episodes/adam-fishman/transcript.md",
+            chunk_index=0,
+            text="Onboarding is critical and 100% of users see it.",
+            speaker="Adam Fishman",
+            start_time="00:00:00",
+            score=0.95,
+        )
+
+        # Model returns plain text block, not a tool_use block
+        mock_text_block = MagicMock()
+        mock_text_block.type = "text"
+        mock_text_block.text = "Here is my ungrounded opinion on onboarding."
+
+        mock_response = MagicMock()
+        mock_response.content = [mock_text_block]
+
+        mock_client = MagicMock()
+        mock_client.messages.create.return_value = mock_response
+
+        history = [
+            {"role": "user", "content": "Let's discuss Adam Fishman's framework."},
+            {"role": "assistant", "content": "Sure, what would you like to know?"},
+        ]
+
+        with patch("anthropic.Anthropic", return_value=mock_client):
+            with patch("backend.app.agents.orchestrator.search_transcripts", return_value=[fake_chunk]) as mock_search:
+                events = []
+                async for item in run_agent_pipeline(
+                    "What did he emphasize?",
+                    history=history,
+                    provider=provider,
+                    db=db_mock,
+                ):
+                    events.append(item)
+
+                # Search MUST still run in code even though model didn't call the tool
+                mock_search.assert_called_once()
+                # provider.chat MUST be called with retrieved chunks to generate grounded answer
+                self.assertTrue(provider.chat_called)
+                done_event = next(e for e in events if e["event"] == "done")
+                self.assertFalse(done_event["data"]["no_sources"])
+                self.assertEqual(len(done_event["data"]["citations"]), 1)
+                self.assertEqual(done_event["data"]["citations"][0]["guest"], "Adam Fishman")
 
     async def test_empty_retrieval_refuses_without_model_chat(self):
         """Verify that when retrieval is empty, assistant immediately refuses and provider.chat is never called."""

@@ -443,6 +443,6 @@ Write anything you did that was not in this plan. Ask yourself for each: is it r
 
 | Date/time | What I did | Why | In the brief? (Y/N) | Keep or drop |
 |---|---|---|---|---|
-|  |  |  |  |  |
-|  |  |  |  |  |
-|  |  |  |  |  |
+| 2026-10-12 | Created `scripts/verify_agent_tool_e2e.py` | Standalone verification script proving end-to-end Anthropic SDK tool calling loop in agent pipeline | N | Keep (validates tool calling without requiring live DB) |
+| 2026-10-12 | Created `scripts/benchmark_ttft.py` | Benchmark measuring Time to First Token (TTFT) with vs without agent tool roundtrip to quantify latency tradeoff | N | Keep (evidence for PRD technical trade-offs) |
+| 2026-10-12 | Created `scripts/test_optimized_ttft.py` | Verified TTFT reduction after skipping tool-calling loop on standalone queries | N | Keep (verification proof) |

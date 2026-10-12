@@ -23,6 +23,11 @@
 | 1b.1 SDK identification | DONE-VERIFIED | Proved `anthropic==1.13.0` messages API; `claude-agent-sdk==0.2.165` needs Claude Code CLI; Pi hung on TTY |
 | 1b.2 Runtime integration | DONE-VERIFIED | `orchestrator.py` wired to `invoke_retrieval_tool_agent`; verified end-to-end; 26 unit tests pass |
 | 1b.3 Honest docs update | DONE-VERIFIED | `docs/decisions/agent-layer.md`, `docs/architecture.md`, `README.md`, `docs/PLAN.md` relabeled |
+| 1c.1 pip show verification | DONE-VERIFIED | `pip show anthropic` (1.13.0) and `claude-agent-sdk` (0.2.165); pinned in `backend/requirements.txt` |
+| 1c.2 Grounding guarantee | DONE-VERIFIED | In `orchestrator.py`, vector search ALWAYS executes in code regardless of tool response; unit tests added and passing |
+| 1c.3 TTFT benchmark & skip | DONE-VERIFIED | Measured TTFT (3.96s with tool vs 0.71s without, diff 3.26s > 2s). Added standalone skip optimization -> 0.72s median |
+| 1c.4 Grounding spot-check | DONE-VERIFIED | Checked Ada Chen Rekhi actual transcript: synthetic claims NOT FOUND, mapped real transcript facts to Curiosity Loops |
+| 1c.5 Progress & commit | DONE-VERIFIED | PROGRESS.md updated; changes committed |
 
 ## Phase 2 — Ship 30 skill
 
