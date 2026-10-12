@@ -205,6 +205,19 @@ class TestChunking(unittest.TestCase):
             self.assertGreaterEqual(first_chunk.token_count, 200)
             self.assertIn("Adam Fishman", first_chunk.speaker)
 
+    def test_ada_chen_rekhi_metadata_parsing(self):
+        """Verify real metadata title and guest are parsed accurately from frontmatter."""
+        real_file = Path("data/transcripts/ada-chen-rekhi/transcript.md")
+        if real_file.exists():
+            content = real_file.read_text(encoding="utf-8")
+            parsed = parse_transcript(content, source_path=str(real_file))
+            self.assertEqual(parsed.guest, "Ada Chen Rekhi")
+            self.assertEqual(
+                parsed.title,
+                "Feeling stuck? Here's how to know when it's time to leave your job | Ada Chen Rekhi",
+            )
+            self.assertGreater(len(parsed.turns), 20)
+
 
 if __name__ == "__main__":
     unittest.main()

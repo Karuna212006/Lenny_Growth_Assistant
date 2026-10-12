@@ -35,6 +35,12 @@
 | 1d.5 Transcript layout & DB count | DONE-VERIFIED | Confirmed layout: 303 folders with `transcript.md`; `ingest.py` reads `*/transcript.md`; DB schema initialized |
 | 1d.6 ship30-guide-notes.md audit | DONE-VERIFIED | Disclosed agent memory origin; paused Phase 2 until user supplies official guide text |
 | 1d.7 Progress & commit | DONE-VERIFIED | PROGRESS.md updated; separate commit created |
+| 1e.1 Database audit & WSL disclosure | DONE-VERIFIED | DATABASE_URL documented; WSL documented as dev-only convenience; Docker Compose marked NOT VERIFIED |
+| 1e.2 Real ingestion (303 episodes) | DONE-VERIFIED | Ingested 303 episodes (19,434 chunks) in 1054.60s; verified via SQL count |
+| 1e.3 Verbatim check & parser fix | DONE-VERIFIED | 9/9 chunks verified verbatim in transcript files; Ada Chen Rekhi title/guest test added |
+| 1e.4 Real API test & threshold sweep | DONE-VERIFIED | Real API SSE streamed; threshold sweep (0.30/0.35) achieved 5/5 answered and 3/3 refused |
+| 1e.5 Follow-up latency comparison | DONE-VERIFIED | Tool loop (5.53s) vs rewriter only (2.03s); added status keep-alive event before tool step |
+| 1e.6 Progress update & separate commit | DONE-VERIFIED | PROGRESS.md and RESULTS.md updated; separate commit created |
 
 ## Phase 2 — Ship 30 skill
 

@@ -283,6 +283,7 @@ async def run_agent_pipeline(
     has_earlier_turn_refs = bool(history) and is_follow_up(prompt)
     try:
         if has_earlier_turn_refs:
+            yield {"event": "status", "data": {"stage": "retrieving", "message": "understanding your follow-up"}}
             retrieved_chunks = await invoke_retrieval_tool_agent(search_query, db=db)
         else:
             retrieved_chunks = await search_transcripts(search_query, db=db)
