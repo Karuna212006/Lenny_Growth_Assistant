@@ -9,6 +9,7 @@ Coordinates the fixed execution pipelines:
 from __future__ import annotations
 
 import json
+import re
 from typing import AsyncGenerator, Any
 from uuid import UUID
 
@@ -43,6 +44,35 @@ RETRIEVAL_TOOL_SCHEMA = [
         },
     }
 ]
+
+RE_SOURCE_TAG = re.compile(r"\[S(\d+)\]")
+
+
+def validate_source_citations(text: str, max_source_index: int) -> tuple[str, list[int], list[int]]:
+    """
+    Check cited source tags [S#] in LLM output.
+    Returns (cleaned_text, valid_sources, invalid_sources).
+    Invalid source citations referencing non-existent sources (> max_source_index) are stripped and logged.
+    """
+    valid: list[int] = []
+    invalid: list[int] = []
+
+    def _replace(match: re.Match) -> str:
+        s_idx = int(match.group(1))
+        if 1 <= s_idx <= max_source_index:
+            valid.append(s_idx)
+            return match.group(0)
+        else:
+            invalid.append(s_idx)
+            logger.warning(
+                "Grounding check: stripped hallucinated citation [S%d] (only %d chunks available)",
+                s_idx,
+                max_source_index,
+            )
+            return ""
+
+    cleaned = RE_SOURCE_TAG.sub(_replace, text)
+    return cleaned, sorted(list(set(valid))), sorted(list(set(invalid)))
 
 
 async def invoke_retrieval_tool_agent(
@@ -298,18 +328,22 @@ async def run_agent_pipeline(
     ]
     yield {"event": "citations", "data": {"citations": citations_data}}
 
-    # 3. Assemble Grounded Prompt
+    # 3. Assemble Grounded Prompt with Numbered Sources [S#]
     context_blocks = []
     for idx, c in enumerate(retrieved_chunks, start=1):
         context_blocks.append(
-            f"--- Excerpt {idx} {c.citation} ---\n{c.text}"
+            f"--- [S{idx}] {c.citation} ({c.start_time or ''}) ---\n{c.text}"
         )
     combined_context = "\n\n".join(context_blocks)
 
     augmented_user_message = (
         f"Context from Lenny's Podcast Transcripts:\n\n{combined_context}\n\n"
         f"User Question: {prompt}\n\n"
-        f"Please answer the question thoroughly, citing claims using exact source tags like {retrieved_chunks[0].citation}."
+        f"Instructions:\n"
+        f"- Answer thoroughly and objectively using ONLY the facts directly stated in the context excerpts above.\n"
+        f"- Cite every factual claim using [S#] tags matching the numbered sources (e.g., [S1], [S2]).\n"
+        f"- If the sources do not contain sufficient evidence to answer, state: 'Based on the available transcripts, this topic is not covered in the episodes.'\n"
+        f"- Do NOT make up external frameworks, dates, numbers, or rules not present in the excerpts."
     )
 
     llm_messages = [
@@ -326,12 +360,18 @@ async def run_agent_pipeline(
         yield {"event": "token", "data": {"text": token}}
 
     full_text = "".join(accumulated_tokens)
+    cleaned_text, valid_cites, invalid_cites = validate_source_citations(
+        full_text, len(retrieved_chunks)
+    )
+
     yield {
         "event": "done",
         "data": {
             "citations": citations_data,
             "no_sources": False,
-            "full_text": full_text,
+            "full_text": cleaned_text,
+            "valid_citations": valid_cites,
+            "invalid_citations": invalid_cites,
             "intent": "qa",
         },
     }

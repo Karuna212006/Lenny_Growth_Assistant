@@ -295,7 +295,58 @@ class TestAgentLayer(unittest.IsolatedAsyncioTestCase):
                 self.assertTrue(done_event["data"]["no_sources"])
                 self.assertIn("no relevant discussions were found", done_event["data"]["full_text"])
 
+    async def test_citation_validator_catches_nonexistent_source(self):
+        """Verify that when a model invents a non-existent source citation (e.g. [S99]), it is caught and stripped."""
+        from backend.app.agents.orchestrator import validate_source_citations
+
+        # 1. Unit test the validator directly
+        text_with_hallucination = "Onboarding is critical [S1], and founders should invest early [S99]."
+        cleaned, valid, invalid = validate_source_citations(text_with_hallucination, max_source_index=2)
+        self.assertEqual(valid, [1])
+        self.assertEqual(invalid, [99])
+        self.assertNotIn("[S99]", cleaned)
+        self.assertIn("[S1]", cleaned)
+
+        # 2. Integration test through pipeline
+        class HallucinatingProvider(BaseLLMProvider):
+            async def chat(self, messages, stream=True):
+                yield "Ada recommended Curiosity Loops [S1], but also 100 days [S99]."
+
+            async def embed(self, text: str):
+                return [0.1] * 768
+
+            async def is_available(self):
+                return True
+
+        provider = HallucinatingProvider()
+        db_mock = AsyncMock()
+
+        fake_chunk = RetrievedChunk(
+            chunk_id=uuid4(),
+            episode_id=uuid4(),
+            episode_title="Curiosity Loops",
+            guest="Ada Chen Rekhi",
+            source_path="episodes/ada-chen-rekhi/transcript.md",
+            chunk_index=0,
+            text="Curiosity loops help gather feedback.",
+            speaker="Ada Chen Rekhi",
+            start_time="00:00:00",
+            score=0.90,
+        )
+
+        with patch("backend.app.agents.orchestrator.search_transcripts", return_value=[fake_chunk]):
+            events = []
+            async for item in run_agent_pipeline("Tell me about Ada's loops", history=[], provider=provider, db=db_mock):
+                events.append(item)
+
+            done_event = next(e for e in events if e["event"] == "done")
+            self.assertEqual(done_event["data"]["valid_citations"], [1])
+            self.assertEqual(done_event["data"]["invalid_citations"], [99])
+            self.assertNotIn("[S99]", done_event["data"]["full_text"])
+            self.assertIn("[S1]", done_event["data"]["full_text"])
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

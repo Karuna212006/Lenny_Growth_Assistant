@@ -446,3 +446,6 @@ Write anything you did that was not in this plan. Ask yourself for each: is it r
 | 2026-10-12 | Created `scripts/verify_agent_tool_e2e.py` | Standalone verification script proving end-to-end Anthropic SDK tool calling loop in agent pipeline | N | Keep (validates tool calling without requiring live DB) |
 | 2026-10-12 | Created `scripts/benchmark_ttft.py` | Benchmark measuring Time to First Token (TTFT) with vs without agent tool roundtrip to quantify latency tradeoff | N | Keep (evidence for PRD technical trade-offs) |
 | 2026-10-12 | Created `scripts/test_optimized_ttft.py` | Verified TTFT reduction after skipping tool-calling loop on standalone queries | N | Keep (verification proof) |
+| 2026-10-12 | Created `scripts/run_real_retrieval_e2e.py` | Full real retrieval and model answer reproduction script on actual Ada Chen Rekhi transcript | N | Keep (Phase 1d grounding proof) |
+| 2026-10-12 | Created `scripts/measure_real_ttft.py` | Rigorous benchmark measuring request start to first token SSE event for standalone vs follow-up | N | Keep (Phase 1d proof for PRD metrics) |
+| 2026-10-12 | Created `scripts/setup_wsl_db.sh` | Shell script to configure PostgreSQL 18 with pgvector extension in local WSL | N | Keep (reproducibility setup) |

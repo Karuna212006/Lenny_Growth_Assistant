@@ -28,6 +28,13 @@
 | 1c.3 TTFT benchmark & skip | DONE-VERIFIED | Measured TTFT (3.96s with tool vs 0.71s without, diff 3.26s > 2s). Added standalone skip optimization -> 0.72s median |
 | 1c.4 Grounding spot-check | DONE-VERIFIED | Checked Ada Chen Rekhi actual transcript: synthetic claims NOT FOUND, mapped real transcript facts to Curiosity Loops |
 | 1c.5 Progress & commit | DONE-VERIFIED | PROGRESS.md updated; changes committed |
+| 1d.1 Real retrieval e2e run | DONE-VERIFIED | Ran real pipeline on Ada Chen Rekhi transcript; 100% claims supported by retrieved chunks [S1]-[S4] |
+| 1d.2 Canned fixtures diagnosis | DONE-VERIFIED | Proved earlier claims came from canned fixture in spike/e2e mock (Explanation 1); model is grounded |
+| 1d.3 Strict grounding prompt & validator | DONE-VERIFIED | Tightened prompt to [S#], added in-code citation validator, unit test verified catching [S99] |
+| 1d.4 TTFT redefinition & measurement | DONE-VERIFIED | Re-measured time to first `token` SSE event: 0.88s standalone, 7.46s follow-up; logged in `docs/eval/RESULTS.md` |
+| 1d.5 Transcript layout & DB count | DONE-VERIFIED | Confirmed layout: 303 folders with `transcript.md`; `ingest.py` reads `*/transcript.md`; DB schema initialized |
+| 1d.6 ship30-guide-notes.md audit | DONE-VERIFIED | Disclosed agent memory origin; paused Phase 2 until user supplies official guide text |
+| 1d.7 Progress & commit | DONE-VERIFIED | PROGRESS.md updated; separate commit created |
 
 ## Phase 2 — Ship 30 skill
 
