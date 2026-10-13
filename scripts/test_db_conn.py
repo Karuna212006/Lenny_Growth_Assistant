@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from sqlalchemy import text
 from backend.app.db.session import engine, async_session_factory
 
-async def test():
+async def main():
     print("Engine URL:", engine.url)
     print("Testing engine.connect()...")
     async with engine.connect() as conn:
@@ -20,4 +20,4 @@ async def test():
         print(f"Episodes: {res_ep.scalar()} | Chunks: {res_ch.scalar()}")
 
 if __name__ == "__main__":
-    asyncio.run(test())
+    asyncio.run(main())

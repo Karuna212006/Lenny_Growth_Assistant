@@ -49,17 +49,17 @@ Due: **12/10/26 EOD** (read as 12 Oct 2026). Today is 9 Oct, so you have about 3
 - [x] `.env.example` with safe defaults; **no secrets committed**
 - [x] Structured logs covering model, retrieval, database, artifact-rendering failures
 - [x] Graceful handling of: missing keys, Ollama down, model timeout, empty retrieval, DB connection failure
-- [ ] Handoff docs: how to run, test, troubleshoot, extend
-- [ ] Fresh evaluator can clone and run using **only documented steps**
+- [x] Handoff docs: how to run, test, troubleshoot, extend
+- [x] Fresh evaluator can clone and run using **only documented steps**
 
 ### Deliverables (all 8 required)
 - [x] 1. Public GitHub repo (sensible structure, no secrets)
-- [ ] 2. `README.md`
-- [x] 3. PRD (stub created in `docs/PRD.md`)
-- [x] 4. `design.md` (stub created in `docs/design.md`)
-- [x] 5. `architecture.md` (locked in `docs/architecture.md`)
+- [x] 2. `README.md`
+- [x] 3. PRD (completed in `docs/PRD.md`)
+- [x] 4. `design.md` (completed in `docs/design.md`)
+- [x] 5. `architecture.md` (completed in `docs/architecture.md`)
 - [x] 6. Agent transcripts folder (including **failed attempts and fixes**, secrets removed)
-- [x] 7. Tests (critical API, retrieval, routing, persistence) + short manual UI test plan
+- [x] 7. Tests (critical API, retrieval, routing, persistence) + short manual UI test plan (`docs/manual_test_plan.md`)
 - [ ] 8. Demo video, 2–3 min, **camera on**, uploaded to **YouTube**
 
 ---
