@@ -104,6 +104,7 @@
 | 7.5 manual_test_plan.md | DONE-VERIFIED | Created `docs/manual_test_plan.md` with 10 manual UI scenarios |
 | 7.6 agent-transcripts index | DONE-VERIFIED | `agent-transcripts/README.md` updated with sessions 01, 02, 03, and 04 |
 | 7.7 PLAN.md update | DONE-VERIFIED | `docs/PLAN.md` synced with deliverables status |
+| 7.8 Demo Video Guide | DONE-VERIFIED | Created `docs/DEMO_VIDEO_GUIDE.md` with second-by-second script, copy-paste prompts, and rubric |
 
 ## Phase 8 — Pre-push
 
