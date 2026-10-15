@@ -43,6 +43,7 @@
 - [`docs/architecture.md`](docs/architecture.md) — System design, DB schema, ER diagram, contracts, security topology
 - [`docs/design.md`](docs/design.md) — UI/UX specification, 3-pane layout, states, accessibility
 - [`docs/manual_test_plan.md`](docs/manual_test_plan.md) — Step-by-step manual UI verification scenarios
+- [`docs/DEMO_VIDEO_GUIDE.md`](docs/DEMO_VIDEO_GUIDE.md) — 2–3 minute video recording guide, walkthrough script, and copy-paste prompts
 - [`docs/eval/RESULTS.md`](docs/eval/RESULTS.md) — Empirical benchmarks (verbatim checks, threshold sweep, TTFT profiles)
 - [`docs/decisions/agent-layer.md`](docs/decisions/agent-layer.md) — Spike results comparing Anthropic SDK vs Pi Coding Agent vs Claude Agent SDK
 - [`agent-transcripts/`](agent-transcripts/) — Chronological record of all agent pair-programming sessions including failed attempts
@@ -223,3 +224,4 @@ Generated HTML/CSS deliverables are treated as untrusted input. The application 
 ## 12. Demo Video
 
 - **Video Walkthrough (2–3 mins, camera on):** *[Link to YouTube Video — To be added]*
+- **Recording Guide & Script:** See [`docs/DEMO_VIDEO_GUIDE.md`](docs/DEMO_VIDEO_GUIDE.md) for the second-by-second presentation script, timing breakdown, and copy-paste prompt sheet.
